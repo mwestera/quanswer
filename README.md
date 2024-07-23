@@ -20,15 +20,21 @@ This will make the command `quanswer` available in your shell.
 
 ## Usage ##
 
-Input should be .csv with context,question pairs, or .jsonl with 'context' and 'question' fields. 
+Input should be .csv with columns context question, or .jsonl with 'context' and 'question' fields, e.g.: 
 
 ```bash
-$ echo "What is the capital of NL?,\"The capital of France is Paris, while the capital of Holland is Amsterdam, and so on.\"" | quanswer > score.csv
+quanswer some_qa_items.jsonl > score.csv
 ```
 
-This will write only the QA-scores. To get full json output (inc. detected answer spans):
+Or feed a single context,question csv pair:
 
 ```bash
-$ echo "What is the capital of NL?,\"The capital of France is Paris, while the capital of Holland is Amsterdam, and so on.\"" | quanswer --json > results.jsonl
+$ echo "\"The capital of France is Paris, while the capital of Holland is Amsterdam, and so on.\",What is the capital of NL?" | quanswer > score.csv
+```
+
+To get full json output, include `--json`: 
+
+```bash
+quanswer some_more_qa_items.csv --json > results.jsonl
 ```
 
