@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quanswer"
+version = "0.1"
+authors = [{name="Matthijs Westera", email="m.westera@hum.leidenuniv.nl"}]
+description = "CLI wrapper around Huggingface transformers' question answering pipeline."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["transformers", "torch"]
+
+
+[project.scripts]
+quanswer = "quanswer.cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/mwestera/quanswer"
+"Bug Tracker" = "https://github.com/mwestera/quanswer/issues"
