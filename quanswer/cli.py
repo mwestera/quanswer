@@ -16,15 +16,14 @@ CLI wrapper around Huggingface transformers' pipeline for question answering.
 
 Example:
 
-$ echo "What is the capital of NL?,\"The capital of France is Paris, while the capital of Holland is Amsterdam, and so on.\"" | quanswer --json > results.jsonl
+$ echo "What is the capital of NL?,\"The capital of France is Paris, while the capital of Holland is Amsterdam, and so on.\"" | quans --json > results.jsonl
 """
 
 
 def main():
 
     parser = argparse.ArgumentParser(description='Wrapper around question answering transformers pipeline.')
-    parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
-                        help='File containing json lines with keys "context" and "question", or "context,question" csv pairs.')
+    parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help='File containing json or csv lines with keys "context" and "question", or "context,question" csv pairs.')
     parser.add_argument('--model', '--lang', type=str, default='en', help='Language code or specific model to use; default en.')    # TODO: Add langdetect?
     parser.add_argument('--json', action='store_true', help='Whether to output full results as json. Otherwise outputs only the score.')
 
