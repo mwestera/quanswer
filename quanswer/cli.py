@@ -31,12 +31,11 @@ def main():
 
     qa_model = load_qa_model(args.model)
 
-    for items in batched(reader(args.file), 10000):
-        results = qa_model(items, handle_impossible_answer=True)
+    for result in qa_model(reader(args.file), handle_impossible_answer=True):
         if args.json:
-            print(json.dumps(results))
+            print(json.dumps(result))
         else:
-            print(results['score'])
+            print(result['score'])
 
 
 def reader(file):
@@ -77,16 +76,6 @@ def strip_csv_header(file):
         return file, parsed
     else:  # means it was no header
         return itertools.chain([firstline], file), None
-
-
-# Included here, since only available in Python 3.12...
-def batched(iterable, n):
-    # batched('ABCDEFG', 3) → ABC DEF G
-    if n < 1:
-        raise ValueError('n must be at least one')
-    iterator = iter(iterable)
-    while batch := tuple(itertools.islice(iterator, n)):
-        yield batch
 
 
 if __name__ == '__main__':
