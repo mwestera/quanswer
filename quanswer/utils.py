@@ -11,5 +11,5 @@ default_models = {
 @functools.cache
 def load_qa_model(lang_or_name: str):
     model_name = default_models.get(lang_or_name) or lang_or_name
-    qa_model = pipeline("question-answering", model_name)
+    qa_model = pipeline("question-answering", model=model_name)
     return qa_model
