@@ -26,6 +26,12 @@ $ echo "\"The capital of France is Paris, while the capital of Holland is Amster
 
 def main():
 
+    class RoundingFloat(float):
+        __repr__ = staticmethod(lambda x: format(x, '.5f'))
+
+    json.encoder.c_make_encoder = None
+    json.encoder.float = RoundingFloat
+
     parser = argparse.ArgumentParser(description='Wrapper around question answering transformers pipeline.')
     parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help='File containing json or csv lines with keys "context" and "question", or "context,question" csv pairs.')
     parser.add_argument('--model', '--lang', type=str, default='en', help='Language code or specific model to use; default en.')
@@ -91,8 +97,8 @@ def reader(file):
 
 
 def peek_if_jsonl(file):
-    firstline = next(file)
-    file = StringIteratorIO(itertools.chain([firstline], file)) # TODO: Works, but if using a custom class, better just make a peekable version of stdin
+    file, peekfile = itertools.tee(file)
+    firstline = next(peekfile)
     try:
         d = json.loads(firstline.strip())
         if isinstance(d, dict):
@@ -103,69 +109,13 @@ def peek_if_jsonl(file):
 
 
 def strip_csv_header(file, header_contains):
-    firstline = next(file)
+    file, peekfile = itertools.tee(file)
+    firstline = next(peekfile)
     parsed = next(csv.reader([firstline.strip()]))
     if all(c in parsed for c in header_contains):
-        return file, parsed
+        return peekfile, parsed
     else:  # means it was no header
-        return StringIteratorIO(itertools.chain([firstline], file)), None
-
-
-class StringIteratorIO(io.TextIOBase):
-    """
-    https://stackoverflow.com/questions/12593576/adapt-an-iterator-to-behave-like-a-file-like-object-in-python
-    """
-
-    def __init__(self, iter):
-        self._iter = iter
-        self._left = ''
-
-    def readable(self):
-        return True
-
-    def _read1(self, n=None):
-        while not self._left:
-            try:
-                self._left = next(self._iter)
-            except StopIteration:
-                break
-        ret = self._left[:n]
-        self._left = self._left[len(ret):]
-        return ret
-
-    def read(self, n=None):
-        l = []
-        if n is None or n < 0:
-            while True:
-                m = self._read1()
-                if not m:
-                    break
-                l.append(m)
-        else:
-            while n > 0:
-                m = self._read1(n)
-                if not m:
-                    break
-                n -= len(m)
-                l.append(m)
-        return ''.join(l)
-
-    def readline(self):
-        l = []
-        while True:
-            i = self._left.find('\n')
-            if i == -1:
-                l.append(self._left)
-                try:
-                    self._left = next(self._iter)
-                except StopIteration:
-                    self._left = ''
-                    break
-            else:
-                l.append(self._left[:i+1])
-                self._left = self._left[i+1:]
-                break
-        return ''.join(l)
+        return file, None
 
 
 if __name__ == '__main__':
