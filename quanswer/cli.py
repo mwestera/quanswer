@@ -11,15 +11,21 @@ from transformers.data.processors import SquadExample
 
 from .utils import *
 
-import io
-
 
 """
 CLI wrapper around Huggingface transformers' pipeline for question answering.
 
+Somewhat differently from the regular question answering pipeline, with --tokens, this script returns per-token probabilities (probability of the token being in the answer).
+
+I have found this to be more useful for inspecting model output, than merely the top-k answer spans.
+
 Example:
 
-$ echo "\"The capital of France is Paris, while the capital of Holland is Amsterdam, and so on.\",What is the capital of NL?" | quanswer --json --lang nl --topk 3
+$ echo "\"The capital of France is Paris, while the capital of Holland is Amsterdam, and so on.\",What is the capital of NL?" | quanswer --dict --lang nl --topk 3 --tokens
+
+Or from a .jsonl or .csv file containing columns 'context' and 'question':
+
+$ quanswer contexts_and_questions.csv --dict --lang nl --topk 3 --tokens
 
 """
 
@@ -37,13 +43,13 @@ def main():
     parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help='File containing json or csv lines with keys "context" and "question", or "context,question" csv pairs.')
     parser.add_argument('--model', '--lang', type=str, default='en', help='Language code or specific model to use; default en.')
     parser.add_argument('--topk', type=int, default=1, help='How many answer candidats to return per item.')
-    parser.add_argument('--json', action='store_true', help='Whether to output full results as json. Otherwise outputs only the score.')
-    parser.add_argument('--mustanswer', action='store_true', help='To disallow non-answers (span 0,0), like for Squad v1.')
-    parser.add_argument('--tokenscores', action='store_true', help='Whether to return per-token scores as well.')
+    parser.add_argument('--dict', action='store_true', help='Whether to output full results as a json dict. Otherwise outputs only the is_answered score (or answer score, if --mustanswer).')
+    parser.add_argument('--mustanswer', action='store_true', help='To disallow non-answers (span 0,0), like for Squad v1. Not thoroughly tested.')
+    parser.add_argument('--tokens', action='store_true', help='Whether to return per-token scores as well.')
 
     args = parser.parse_args()
 
-    qa_model = load_qa_model(args.model, return_logits=args.tokenscores)
+    qa_model = load_qa_model(args.model, return_token_scores=args.tokens)
 
     for result in qa_model(reader(args.file), handle_impossible_answer=not args.mustanswer, top_k=args.topk):
 
@@ -60,7 +66,7 @@ def main():
                 'answer': answers[0]['answer'],
                 'answers': answers,
             })
-            if args.tokenscores:
+            if args.tokens:
                 result['token_scores'] = answers[0]['token_scores']
                 result['token_spans'] = answers[0]['token_spans']
                 del answers[0]['token_scores']
@@ -68,7 +74,7 @@ def main():
         else:
             result = result[0]
 
-        if args.json:
+        if args.dict:
             keys_order = ['is_answered', 'score', 'start', 'end', 'answer', 'answers', 'token_scores', 'token_spans']
             result = {key: result[key] for key in keys_order if key in result}
             print(json.dumps(result))
@@ -79,12 +85,12 @@ def main():
                 print(result['is_answered'])
 
 def reader(file):
-    file, is_json = peek_if_jsonl(file)
+    iterlines, is_json = peek_if_jsonl(file)
     if is_json:
-        basereader = (json.loads(line.strip()) for line in file)
+        basereader = (json.loads(line.strip()) for line in iterlines)
     else:  # assume csv
-        file, header = strip_csv_header(file, header_contains=['context', 'question'])
-        basereader = csv.DictReader(file, fieldnames=header if header else ['context', 'question'])
+        iterlines, header = strip_csv_header(iterlines, header_contains=['context', 'question'])
+        basereader = csv.DictReader(iterlines, fieldnames=header if header else ['context', 'question'])
 
     for n, item in enumerate(basereader):
         yield SquadExample(
@@ -97,26 +103,26 @@ def reader(file):
         )
 
 
-def peek_if_jsonl(file):
-    file, peekfile = itertools.tee(file)
+def peek_if_jsonl(iterlines):
+    iterlines, peekfile = itertools.tee(iterlines)
     firstline = next(peekfile)
     try:
         d = json.loads(firstline.strip())
         if isinstance(d, dict):
-            return file, True
+            return iterlines, True
     except json.JSONDecodeError:
         pass
-    return file, False
+    return iterlines, False
 
 
-def strip_csv_header(file, header_contains):
-    file, peekfile = itertools.tee(file)
+def strip_csv_header(iterlines, header_contains):
+    iterlines, peekfile = itertools.tee(iterlines)
     firstline = next(peekfile)
     parsed = next(csv.reader([firstline.strip()]))
     if all(c in parsed for c in header_contains):
         return peekfile, parsed
     else:  # means it was no header
-        return file, None
+        return iterlines, None
 
 
 if __name__ == '__main__':

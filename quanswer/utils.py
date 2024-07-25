@@ -10,9 +10,9 @@ default_models = {
 }
 
 @functools.cache
-def load_qa_model(lang_or_name: str, return_logits=True):
+def load_qa_model(lang_or_name: str, return_token_scores=True):
     model_name = default_models.get(lang_or_name) or lang_or_name
-    if return_logits:
+    if return_token_scores:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForQuestionAnswering.from_pretrained(model_name)
         qa_model = QuestionAnsweringPipelineTokenProbs(model=model, tokenizer=tokenizer)
