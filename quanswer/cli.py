@@ -47,6 +47,8 @@ def main():
     parser.add_argument('--mustanswer', action='store_true', help='To disallow non-answers (span 0,0), like for Squad v1. Not thoroughly tested.')
     parser.add_argument('--tokens', action='store_true', help='Whether to return per-token scores as well.')
 
+    # TODO: Add --keep?
+
     args = parser.parse_args()
 
     qa_model = load_qa_model(args.model, return_token_scores=args.tokens)
