@@ -58,13 +58,18 @@ def main():
                 result['token_spans'] = answers[0]['token_spans']
                 del answers[0]['token_scores']
                 del answers[0]['token_spans']
+        else:
+            result = result[0]
 
         if args.json:
-            # TODO: Make keys ordering consistent with the above case
-            print(json.dumps(result))   # with keys: score, start, stop, answer, (token_scores, token_spans, is_answered)
+            keys_order = ['is_answered', 'score', 'start', 'end', 'answer', 'answers', 'token_scores', 'token_spans']
+            result = {key: result[key] for key in keys_order if key in result}
+            print(json.dumps(result))
         else:
-            print(result['score'])  # TODO: consider returning only is_answered
-
+            if args.mustanswer:
+                print(result['score'])
+            else:
+                print(result['is_answered'])
 
 def reader(file):
     file, is_json = peek_if_jsonl(file)
