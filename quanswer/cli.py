@@ -24,11 +24,12 @@ $ echo "\"The capital of France is Paris, while the capital of Holland is Amster
 """
 
 
+FLOAT_PRECISION = 5
+
 def main():
 
     class RoundingFloat(float):
-        __repr__ = staticmethod(lambda x: format(x, '.5f'))
-
+        __repr__ = staticmethod(lambda x: format(x, f'.{FLOAT_PRECISION}f'))
     json.encoder.c_make_encoder = None
     json.encoder.float = RoundingFloat
 
