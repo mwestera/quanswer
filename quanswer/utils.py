@@ -59,7 +59,7 @@ class QuestionAnsweringPipelineTokenProbs(QuestionAnsweringPipeline):
         token_end_probas = {}
         token_spans = {}
 
-        # Following copied from super
+        # Following copied from super: turning word pieces back into genuine words (taking its max proba)
         if not self.tokenizer.is_fast:
             char_to_word = np.array(example.char_to_word_offset)
             token_to_orig_map = output["token_to_orig_map"]
@@ -96,6 +96,10 @@ class QuestionAnsweringPipelineTokenProbs(QuestionAnsweringPipeline):
         else:
             prob_unanswered = None
 
+        # Compute per-token probability as:
+        #   for each token, loop through all possible starting points (before it), and compute the probability of
+        #   a span starting there that includes the token (i.e., ending somewhere after it).
+        #   then sum all those probs for each token.
         start_probs = list(token_start_probas.values())
         end_probs = list(token_end_probas.values())
         token_probs = []
