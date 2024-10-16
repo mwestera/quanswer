@@ -76,9 +76,6 @@ def main():
         else:
             result = result[0]
 
-        if result['start'] == result['end'] == 0:
-            result['start'] = result['end'] = None
-
         if args.dict:
             keys_order = ['is_answered', 'score', 'start', 'end', 'answer', 'answers', 'token_scores', 'token_spans']
             result = {key: result[key] for key in keys_order if key in result}
